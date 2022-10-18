@@ -45,32 +45,10 @@ func (t *pgxTransactor) WithinTransaction(ctx context.Context, txFunc func(conte
 
 // WithinTransactionWithOptions runs logic within transaction passing context with pgx.Tx injected into it,
 // so you can retrieve it via PgxWithinTransactionRunner function Runner
-func (t *pgxTransactor) WithinTransactionWithOptions(ctx context.Context, txFunc func(context.Context) error, opts pgx.TxOptions) (err error) {
-	conn, err := t.pool.Acquire(ctx)
-	if err != nil {
-		return err
-	}
-	defer conn.Release()
-
-	tx, err := conn.BeginTx(ctx, opts)
-	if err != nil {
-		return err
-	}
-	defer func() {
-		var txErr error
-		if err != nil {
-			txErr = tx.Rollback(ctx)
-		} else {
-			txErr = tx.Commit(ctx)
-		}
-
-		if txErr != nil {
-			err = txErr
-		}
-	}()
-
-	err = txFunc(injectTx(ctx, tx))
-	return err
+func (t *pgxTransactor) WithinTransactionWithOptions(ctx context.Context, txFunc func(context.Context) error, opts pgx.TxOptions) error {
+	return t.pool.BeginTxFunc(ctx, opts, func(tx pgx.Tx) error {
+		return txFunc(injectTx(ctx, tx))
+	})
 }
 
 // PgxQueryRunner represents query runner behavior
