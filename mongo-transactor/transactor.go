@@ -1,4 +1,5 @@
-package mongo_transactor
+// Package transactor contains logic for mongo-driver transactional behavior
+package transactor
 
 import (
 	"context"
